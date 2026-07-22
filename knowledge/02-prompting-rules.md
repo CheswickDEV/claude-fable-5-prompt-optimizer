@@ -4,6 +4,16 @@ Every rule carries an evidence marker: **[DOCUMENTED: source]** (a documented st
 
 When the optimizer logs a change, it cites the rule number(s) that motivated it.
 
+## Contents
+
+- Group A — Structure & Explicitness (R1–R7)
+- Group B — Thinking & Reasoning (R8–R11)
+- Group C — Verbosity & Communication (R12–R15)
+- Group D — Agentics, Long-Run & Autonomy (R16–R26)
+- Group E — Parameter Recommendations (R27–R34)
+- Group F — 4.x Assumptions That No Longer Hold (R35–R43)
+- Source legend (canonical set)
+
 ## Group A — Structure & Explicitness
 
 **R1 — Instruct clearly, explicitly, completely.** Golden rule: if a colleague with minimal context would be confused by the prompt, so is Claude. Use numbered lists for sequential steps when order matters. *[generic]* **[DOCUMENTED: BestPract]**
@@ -58,7 +68,7 @@ When the optimizer logs a change, it cites the rule number(s) that motivated it.
 
 **R23 — Do not display a remaining-context/token countdown** — it triggers premature summarizing/session-switch suggestions; if unavoidable: "You have ample context remaining. Do not stop, summarize, or suggest a new session on account of context limits." **[DOCUMENTED: PromptF5]**
 
-**R24 — A `send_to_user` tool for long asynchronous agents** (tool inputs are never summarized → content arrives verbatim); only when the UX needs verbatim mid-task delivery. **[DOCUMENTED: PromptF5]**
+**R24 — A `send_to_user` tool for long asynchronous agents** (tool inputs are never summarized → content arrives verbatim); only when the UX needs verbatim mid-task delivery. *[updated 2026-07-14]* Defining the tool is not sufficient on its own: without an explicit system-prompt instruction, Fable 5 rarely calls it — pair the tool with elicitation language, and do not route narration or internal reasoning through it. **[DOCUMENTED: PromptF5]**
 
 **R25 — Design the harness for long turns:** adjust client timeouts, streaming, progress displays; check runs asynchronously (e.g., scheduled jobs) instead of blocking. **[DOCUMENTED: PromptF5, Intro]**
 
@@ -72,7 +82,7 @@ When the optimizer logs a change, it cites the rule number(s) that motivated it.
 
 **R29 — Omit sampling parameters** (`temperature`/`top_p`/`top_k` → 400); determinism substitute: lower effort + tighter prompt; variance substitute: explicit variance instruction. **[DOCUMENTED: Migration]** (variance substitute: **[DERIVED]** from the documented recommendation "Prompting is the recommended way to guide model behavior")
 
-**R30 — No assistant prefill;** enforce format via system-prompt instructions (structured outputs is not documented for Fable 5 — do not recommend it until officially confirmed). **[DOCUMENTED: Migration, StructOut]**
+**R30 — No assistant prefill;** enforce format via system-prompt instructions or — *[updated 2026-07-14]* — via **structured outputs**, which are now GA for Fable 5 (`output_config.format` for JSON outputs, `strict: true` for tool inputs; no beta header). Recommend `output_config.format` for machine-parseable API output; note the incompatibility with citations and prefilling and the schema-complexity limits. **[DOCUMENTED: Migration, StructOut]**
 
 **R31 — Task budget only with a known, realistic value** (min. 20k; advisory); omit for open-ended quality tasks. **[DOCUMENTED: Migration]**
 
@@ -92,7 +102,7 @@ When the optimizer logs a change, it cites the rule number(s) that motivated it.
 
 **R38 — Aggressive trigger language** ("CRITICAL: You MUST…", "If in doubt, use X") — already documented as an overtriggering cause for Opus 4.5/4.6; given the further improved instruction following on Fable 5, scale it back all the more. **[DOCUMENTED: BestPract (for Opus 4.5/4.6)]** + transfer to Fable 5 **[DERIVED]**
 
-**R39 — Remove anti-laziness/thoroughness scaffolding** ("be thorough", forced interim reports every N tool calls): 4.6+ models are markedly more proactive, and skills built for predecessor models are often **too prescriptive** on Fable 5 and degrade quality. **[DOCUMENTED: BestPract, PromptF5]**
+**R39 — Remove anti-laziness/thoroughness scaffolding** ("be thorough", forced interim reports every N tool calls): 4.6+ models are markedly more proactive, and skills built for predecessor models are often **too prescriptive** on Fable 5 and degrade quality. *[updated 2026-07-14]* The docs add: Fable 5 also does a good job of updating skills on the fly based on what it learns from the task at hand — prefer removal over accretion when refactoring. **[DOCUMENTED: BestPract, PromptF5]**
 
 **R40 — "Show your work" transparency patterns** (having reasoning written into the answer) are not just unnecessary on Fable 5 but **risky** (reasoning_extraction refusal + fallback costs). **[DOCUMENTED: PromptF5]**
 
