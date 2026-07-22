@@ -8,7 +8,7 @@
 [![Claude Model](https://img.shields.io/badge/Claude-Fable_5-blueviolet)](https://www.anthropic.com)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/CheswickDEV/claude-fable-5-prompt-optimizer/pulls)
 
-A **claude.ai Project** that rewrites raw prompts for Claude Fable 5 (`claude-fable-5`) — Anthropic's Mythos-class model **above** the Opus tier. Type `prompt: <anything>` and get back an optimized prompt, a change log citing the exact rule behind every edit, and (for API use) a parameter recommendation. All 43 rules trace to official Anthropic documentation.
+A **claude.ai Project** that rewrites raw prompts for Claude Fable 5 (`claude-fable-5`) — Anthropic's Mythos-class model **above** the Opus tier. Type `prompt: <anything>` and get back an optimized prompt, a 0–100 input score, a change log citing the exact rule behind every edit, and (for API use) a parameter recommendation. All 43 rules trace to official Anthropic documentation.
 
 ---
 
@@ -45,11 +45,9 @@ This looks harmless — but on Fable 5 it contains **one safety-refusal risk, on
 
 **The optimizer detects:** no API signals → chat target; long-document knowledge work → Route M. Three anti-patterns flagged.
 
-**You get back:**
+**You get back** — first the finished prompt, alone in a fenced block you copy in one click:
 
 ```text
-<optimized_prompt>
-  <user>
 <documents>
   <document index="1">
     <source>market report</source>
@@ -65,10 +63,23 @@ With that in mind: summarize the report.
 
 First extract the quotes most relevant to the conclusions, then write
 the summary grounded in those quotes. Lead with the key findings. Keep
-it short by being selective, not by compressing the writing;
-readability over brevity.
-  </user>
-</optimized_prompt>
+it short by being selective about what you include, not by compressing
+the writing; readability matters more than brevity.
+```
+
+…then, as **separate blocks below the fence** (never inside the copyable prompt) — the input score, the change log, and the open questions:
+
+```text
+<score>
+  total: 74/100 — band: solid core, targeted fixes
+  A structure: 16/25 · B thinking: 5/15 · C verbosity: 11/15 ·
+  D agentics: 20/20 · E parameters: 15/15 · F legacy: 7/10
+  B: "explain your reasoning step by step" = reasoning echo (R8): −10
+  A: document below the query, no <documents> structure (R5): −4;
+     no intent/audience (R2): −5
+  C: "extremely thorough"/"don't miss anything" (R12/R39): −4
+  F: "IMPORTANT: You MUST" trigger language (R38): −3
+</score>
 <changes>
   - Removed "explain your reasoning step by step" (R8, R40): instructing
     Fable 5 to reproduce its reasoning in the answer can trigger a
@@ -79,8 +90,7 @@ readability over brevity.
     overtriggering on current models; the task statement suffices.
   - Moved the report above the instruction, query at the end, document
     in <documents> structure (R5): documented up to +30% answer quality
-    for 20k+ token inputs; added quote grounding for a long document
-    (R5).
+    for 20k+ token inputs; added quote grounding for a long document.
   - Added an intent line with placeholders (R2): Fable 5 measurably
     performs better knowing purpose and audience.
   - Added a brevity instruction (R12): unsteered, Fable 5 elaborates;
@@ -88,10 +98,10 @@ readability over brevity.
 </changes>
 <open_questions>
   - Who is the audience and what decision does the summary support?
-    (fills the [bracketed] placeholders)
-  - Target length or format (prose vs. bullet points)?
+    (fills the [bracketed] placeholders) (+~5 points if answered)
+  - Target length or format (prose vs. bullet points)? (+~2 points if answered)
   - If you plan to run this via the Claude API instead of chat, say so —
-    I will add a parameter recommendation.
+    I will add a parameter recommendation. (+0 points — unlocks the parameter block)
 </open_questions>
 ```
 
@@ -112,7 +122,7 @@ An agentic API example with a full `<parameters>` block (effort, max_tokens, str
 
 1. Open [claude.ai](https://claude.ai) and create a new **Project** (e.g., "Fable 5 Prompt Optimizer")
 2. Paste the contents of [`project-instructions.md`](https://github.com/CheswickDEV/claude-fable-5-prompt-optimizer/blob/main/project-instructions.md) (everything below the divider) into the **Project Instructions** field
-3. Upload all six files from [`knowledge/`](https://github.com/CheswickDEV/claude-fable-5-prompt-optimizer/tree/main/knowledge) as **knowledge files** in the project
+3. Upload all seven files from [`knowledge/`](https://github.com/CheswickDEV/claude-fable-5-prompt-optimizer/tree/main/knowledge) as **knowledge files** in the project
 
 Start a conversation — type `prompt: <your raw prompt>` and the optimizer handles the rest.
 
@@ -165,7 +175,7 @@ print(response.content[0].text)
 | `make it shorter` / `add a German version` | **Follow-up mode** — iterates on the last optimization and re-emits the full output |
 | `give me the API parameters after all` | Switches the last result to the API variant with a full `<parameters>` block |
 
-Output anatomy: `<optimized_prompt>` (system/user split for API targets; chat targets fold system content into the user prompt; `{{DOCUMENTS}}`/`{{INPUT}}` placeholders for bulk content) · `<parameters>` (API only) · `<changes>` (each entry cites rule numbers) · `<open_questions>` (missing info and risk notes — never blocking counter-questions).
+Output anatomy — the optimized prompt comes **first, as a standalone fenced code block** (system/user split for API targets; chat targets fold system content into the user prompt; `{{DOCUMENTS}}`/`{{INPUT}}` placeholders for bulk content), copyable in one click, followed by these separate blocks: `<parameters>` (API only) · `<score>` (0–100 input score with per-dimension deductions) · `<changes>` (each entry cites rule numbers) · `<open_questions>` (missing info and risk notes — a separate block, never blocking counter-questions, raised in at most 2 rounds).
 
 Non-English prompts are optimized **in their own language**; only the commentary follows your conversation language.
 
@@ -176,6 +186,7 @@ Non-English prompts are optimized **in their own language**; only the commentary
 * 🎛️ **Adaptive target detection** — API prompts get a full `<parameters>` block; claude.ai chat prompts stay clean (ambiguous → chat default, API offered)
 * 📏 **43 source-backed rules** — every rule tagged **[DOCUMENTED: source]** or **[DERIVED]**, nothing invented
 * 🧾 **Auditable change log** — every edit cites a rule, every rule cites an official Anthropic doc
+* 🎯 **100-point input score** — every optimization reports how Fable-5-ready the input was, with per-dimension deductions tied to rule numbers
 * 🛡️ **Refusal-risk warnings** — cyber/bio/reasoning-extraction domains flagged, with `fallbacks: claude-opus-4-8` advice
 * 💬 **Meta mode** — ask the optimizer about Fable 5 and its rules, no trigger needed
 * 🌍 **Language preservation** — prompts are optimized in their own language, commentary in yours
@@ -207,16 +218,16 @@ Six phases (0–5), run on every `prompt:` message:
 ```mermaid
 flowchart LR
     IN(["prompt: …"]) --> P0["0 · Target detection<br/>API or claude.ai chat?"]
-    P0 --> P1["1 · Analysis<br/>anti-pattern scan"]
+    P0 --> P1["1 · Analysis &amp; score<br/>anti-pattern scan"]
     P1 --> P2["2 · Routing<br/>S · M · L · XL"]
     P2 --> P3["3 · Transformation<br/>structure → cleanup → snippets"]
-    P3 --> P4{"4 · Quality gate<br/>12-point checklist"}
+    P3 --> P4{"4 · Quality gate<br/>16-point checklist"}
     P4 -- fail --> P3
     P4 -- pass --> P5(["5 · Structured output"])
 ```
 
 - **Target detection** — API signals (tools, SDKs, harnesses, parameters) get a full `<parameters>` block; everything else defaults to the chat variant, with the API block offered on request.
-- **Analysis** — scans for reasoning echoes, banned parameters, trigger language, over-prescription, token countdowns, cyber/bio refusal risks, and missing intent.
+- **Analysis & scoring** — scans for reasoning echoes, banned parameters, trigger language, over-prescription, token countdowns, cyber/bio refusal risks, and missing intent, then scores the input prompt on a 100-point scale (`07-scoring.md`).
 - **Complexity routing** — four routes decide which rule and parameter package applies:
 
 | Route | Criteria | Parameter preset (API) |
@@ -227,8 +238,8 @@ flowchart LR
 | **XL** Autonomous long-run | hours/days, subagents, memory | `effort: high/xhigh`, async harness |
 
 - **Transformation** — structure (XML, document placement) → explicitness (intent, boundaries) → cleanup (strip 4.x patterns) → behavior snippets per route → parameters (API only).
-- **Quality gate** — a 12-point checklist (no reasoning echo, no banned parameters, no trigger language, structure correct, verbosity steered, language preserved, …) runs before anything is emitted; failures loop back.
-- **Structured output** — API variant (four blocks) or chat variant (three blocks).
+- **Quality gate** — a 16-point checklist (no reasoning echo, no banned parameters, no trigger language, structure correct, verbosity steered, language preserved, prompt alone in its fence, score present, open-questions budget, …) runs before anything is emitted; failures loop back.
+- **Structured output** — API variant (five blocks) or chat variant (four blocks): the copyable prompt first, then `<parameters>` (API only), `<score>`, `<changes>`, and `<open_questions>` as separate blocks.
 
 ---
 
@@ -264,13 +275,14 @@ Full rule texts: [`knowledge/02-prompting-rules.md`](knowledge/02-prompting-rule
 ├── README.md                          # this file
 ├── LICENSE                            # MIT
 ├── project-instructions.md            # paste into the Project's custom instructions
-└── knowledge/                         # upload these six files to the Project
+└── knowledge/                         # upload these seven files to the Project
     ├── 01-fable5-model-facts.md       # model facts, source legend, open points
     ├── 02-prompting-rules.md          # rules R1–R43 with evidence markers
     ├── 03-workflow-and-routing.md     # phases, routing, target detection, edge cases
     ├── 04-output-templates.md         # output blocks, API/chat variants
     ├── 05-snippet-library.md          # paste-ready behavior snippets
-    └── 06-worked-examples.md          # three end-to-end examples
+    ├── 06-worked-examples.md          # three end-to-end examples
+    └── 07-scoring.md                  # the 100-point input-scoring rubric
 ```
 
 ---
